@@ -168,7 +168,8 @@ RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/
     echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
     echo "alias 1_clock_export='export YARP_CLOCK=/clock'" >> ~/.bashrc && \
     echo "alias 2_gazebo='export YARP_CLOCK=/clock && gazebo -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
-    echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc
+    echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc && \
+    echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
 EXPOSE 8080
 EXPOSE 8888
