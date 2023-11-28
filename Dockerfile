@@ -142,6 +142,8 @@ RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo
     cmake -DCMAKE_BUILD_TYPE="Release "../ -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
     cmake --build . --target install
     
+# Adding custom worlds to gazebo
+COPY worlds /usr/share/gazebo-11/worlds
 
 # ergocub-software install
 RUN git clone https://github.com/SimoneMic/ergocub-software.git && cd ergocub-software && git switch wip-SimoneMic-ros2-default && \
@@ -158,6 +160,7 @@ ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ICUBcontrib
 ENV PATH=${PATH}:/home/$USERNAME/robotology-superbuild/build/install/bin
 ENV GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:/home/$USERNAME/robotology-superbuild/build/install/lib
+ENV YARP_ROBOT_NAME=ergoCubGazeboV1
 
 # Bimanual
 RUN git clone https://github.com/Woolfrey/ergocub-bimanual.git && cd ergocub-bimanual && mkdir build && cd build && \
@@ -168,6 +171,9 @@ RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/
     echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
     echo "alias 1_clock_export='export YARP_CLOCK=/clock'" >> ~/.bashrc && \
     echo "alias 2_gazebo='export YARP_CLOCK=/clock && gazebo -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
+    echo "alias 3_gazebo_warehouse='export YARP_CLOCK=/clock && gazebo worlds/SmallWarehouseScen3.world -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
+    echo "alias walking_retargeting='YARP_CLOCK=/clock WalkingModule --from /home/$USERNAME/robotology-superbuild/src/walking-controllers/src/WalkingModule/app/robots/ergoCubGazeboV1/dcm_walking_iFeel_joint_retargeting.ini'" >> ~/.bashrc && \
+    echo "alias launch_wbd_interface='yarprobotinterface --config /home/$USERNAME/ergocub-software/urdf/ergoCub/conf/launch_wholebodydynamics_ecub.xml'" >> ~/.bashrc && \
     echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc && \
     echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
