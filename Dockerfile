@@ -118,7 +118,7 @@ RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
   gstreamer1.0-libav
 
 # YARP Standalone
-RUN git clone https://github.com/robotology/yarp.git -b master && \
+RUN git clone https://github.com/robotology/yarp.git -b yarp-3.8 && \
     cd yarp && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE     -DYARP_COMPILE_libYARP_math=ON     -DYARP_COMPILE_GUIS=ON     -DYARP_COMPILE_DEVICE_PLUGINS=ON     -DENABLE_yarpcar_mjpeg=ON     -DENABLE_yarpcar_depthimage=ON     -DENABLE_yarpcar_depthimage2=ON     -DENABLE_yarpcar_segmentationimage=ON     -DENABLE_yarpcar_portmonitor=ON     -DENABLE_yarpmod_fakeAnalogSensor=ON     -DENABLE_yarpmod_fakeBattery=ON      -DENABLE_yarpmod_fakeDepthCamera=ON     -DENABLE_yarpmod_fakeIMU=ON      -DENABLE_yarpmod_fakeLaser=ON      -DENABLE_yarpmod_fakeLocalizer=ON     -DENABLE_yarpmod_fakeMicrophone=ON      -DENABLE_yarpmod_fakeMotionControl=ON      -DENABLE_yarpmod_fakeNavigation=ON      -DENABLE_yarpmod_fakeSpeaker=ON      -DENABLE_yarpmod_fakebot=ON     -DENABLE_yarpmod_portaudioPlayer=ON     -DENABLE_yarpmod_portaudioRecorder=ON     -DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromExternalPort=ON     -DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromPointCloud=ON     -DENABLE_yarpmod_laserFromRosTopic=ON     -DENABLE_yarpmod_rpLidar3=ON  &&     make -j4 &&     sudo make install
 
 
@@ -174,6 +174,8 @@ RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/
     echo "alias 3_gazebo_warehouse='export YARP_CLOCK=/clock && gazebo worlds/SmallWarehouseScen3.world -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
     echo "alias walking_retargeting='YARP_CLOCK=/clock WalkingModule --from /home/$USERNAME/robotology-superbuild/src/walking-controllers/src/WalkingModule/app/robots/ergoCubGazeboV1/dcm_walking_iFeel_joint_retargeting.ini'" >> ~/.bashrc && \
     echo "alias launch_wbd_interface='yarprobotinterface --config /home/$USERNAME/ergocub-software/urdf/ergoCub/conf/launch_wholebodydynamics_ecub.xml'" >> ~/.bashrc && \
+    echo "alias merge_ports='yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches'" >> ~/.bashrc && \
+    echo "alias col_build='colcon build --symlink-install'" >> ~/.bashrc && \
     echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc && \
     echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
@@ -185,13 +187,14 @@ EXPOSE 10000/tcp 10000/udp
 
 # Nav2
 RUN sudo apt update && sudo apt install -y ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-perception
-# Adding ergocub_navigation on ROS2 WS
+# Adding pointcloud to laserscan and ergocub_navigation on ROS2 WS
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
     /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.sh && colcon build"  && \
     cd src && \
     git clone https://github.com/SimoneMic/ergocub_navigation.git && \
     git clone https://github.com/SimoneMic/bt_nav2_ergocub.git && \
+    git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/humble
     
@@ -214,21 +217,14 @@ ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/b
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
     cd yarp-devices-ros2/ros2_interfaces_ws && \
     source /opt/ros/humble/setup.sh && colcon build && \
-    cd .. && mkdir build && cd build && /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash; source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash; cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON; make -j11" && \
+    cd .. && mkdir build && cd build && \
+    source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \
     echo "source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/local_setup.bash" >> ~/.bashrc
     #cmake -S. -Bbuild -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install -DBUILD_TESTING=OFF && \
     #cmake --build build && \
     #cmake --build build --target install
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/share/yarp:/home/$USERNAME/yarp-devices-ros2/build/share/yarp-devices-ros2   
 #:/home/$USERNAME/robotology-superbuild/build/install/share/yarp-devices-ros2
-RUN 
-
-# Set Read and Write permissions to all home and robotology subfolders
-#USER root
-#RUN sudo chown -R $USERNAME:$USERNAME /home/$USERNAME/robotology-superbuild/ && echo '  ALL=(ALL) /bin/su' >>  /etc/sudoers && \
-#	chown -R $USERNAME:$USERNAME /home/$USERNAME/ && echo 'ecub_docker  ALL=(ALL) /bin/su' >>  /etc/sudoers 
-#USER $USERNAME
-#RUN sudo chmod 777 /home/$USERNAME/robotology-superbuild
 
 WORKDIR /home/$USERNAME
 
