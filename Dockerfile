@@ -55,7 +55,15 @@ RUN locale-gen en_US en_US.UTF-8 &&   update-locale LC_ALL=en_US.UTF-8 LANG=en_U
 
 
 # ROS2 install
-RUN apt-get update  && apt-get install -y     python3-rosdep     python3-vcstool     python3-colcon-common-extensions     python3-colcon-mixin     ros-humble-control-msgs     ros-humble-controller-manager     ros-humble-desktop     ros-humble-generate-parameter-library     ros-humble-geometric-shapes     ros-humble-gripper-controllers     ros-humble-joint-state-broadcaster     ros-humble-joint-state-publisher     ros-humble-joint-trajectory-controller     ros-humble-moveit-common     ros-humble-moveit-configs-utils     ros-humble-moveit-core     ros-humble-moveit-hybrid-planning     ros-humble-moveit-msgs     ros-humble-moveit-resources-panda-moveit-config     ros-humble-moveit-ros-move-group     ros-humble-moveit-ros-perception     ros-humble-moveit-ros-planning     ros-humble-moveit-ros-planning-interface     ros-humble-moveit-ros-visualization     ros-humble-moveit-servo     ros-humble-moveit-visual-tools     ros-humble-moveit     ros-humble-rmw-cyclonedds-cpp     ros-humble-ros2-control     ros-humble-rviz-visual-tools     ros-humble-xacro   ros-humble-test-msgs  && apt-get clean
+RUN apt update && apt install -y python3-rosdep python3-vcstool python3-colcon-common-extensions  python3-colcon-mixin \
+    ros-humble-control-msgs     ros-humble-controller-manager     ros-humble-desktop     ros-humble-generate-parameter-library \
+    ros-humble-geometric-shapes     ros-humble-gripper-controllers     ros-humble-joint-state-broadcaster     ros-humble-joint-state-publisher \
+    ros-humble-joint-trajectory-controller     ros-humble-moveit-common     ros-humble-moveit-configs-utils     ros-humble-moveit-core  \
+    ros-humble-moveit-hybrid-planning     ros-humble-moveit-msgs     ros-humble-moveit-resources-panda-moveit-config    \
+    ros-humble-moveit-ros-move-group     ros-humble-moveit-ros-perception     ros-humble-moveit-ros-planning   \
+    ros-humble-moveit-ros-planning-interface     ros-humble-moveit-ros-visualization     ros-humble-moveit-servo     ros-humble-moveit-visual-tools   \
+    ros-humble-moveit     ros-humble-rmw-cyclonedds-cpp     ros-humble-ros2-control     ros-humble-rviz-visual-tools     ros-humble-xacro \
+    ros-humble-test-msgs   ros-humble-rqt* && apt clean
 
 ENV ROS_DISTRO=humble
 
@@ -156,7 +164,8 @@ ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:$WalkingControllers_INSTALL_DIR/share/yarp
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub
 ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub/robots:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub/robots
-ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share
+ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share:/usr/share/gazebo-11/models
+ENV GAZEBO_RESOURCE_PATH=/usr/share/gazebo-11/worlds:/usr/share/gazebo-11
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ICUBcontrib
 ENV PATH=${PATH}:/home/$USERNAME/robotology-superbuild/build/install/bin
 ENV GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:/home/$USERNAME/robotology-superbuild/build/install/lib
@@ -186,7 +195,7 @@ EXPOSE 10000/tcp 10000/udp
 
 
 # Nav2
-RUN sudo apt update && sudo apt install -y ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-perception
+RUN sudo apt update && sudo apt install -y ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-perception ros-humble-slam-toolbox ros-humble-gazebo-ros
 # Adding pointcloud to laserscan and ergocub_navigation on ROS2 WS
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
