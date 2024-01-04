@@ -146,7 +146,7 @@ RUN cd robotology-superbuild && mkdir build && cd build && \
 RUN curl -sSL http://get.gazebosim.org | sh
 
 # Gazebo Yarp Plugins
-RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && mkdir build && cd build && \
+RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && git checkout tags/v4.9.0 && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE="Release "../ -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
     cmake --build . --target install
     
@@ -206,6 +206,13 @@ RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_works
     git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/humble
+    
+# Install BT Groot
+RUN sudo apt install -y qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev && \
+    git clone --recurse-submodules https://github.com/BehaviorTree/Groot.git && \
+    cd Groot && \
+    cmake -S . -B build && \
+    cmake --build build
     
 # Update walking-comtrollers in robotology superbuild to work in navigation
 RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic https://github.com/SimoneMic/walking-controllers && \
