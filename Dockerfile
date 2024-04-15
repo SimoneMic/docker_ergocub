@@ -125,9 +125,11 @@ RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-libav
 
+  RUN curl -sSL http://get.gazebosim.org | sh
+
 # YARP Standalone
-RUN git clone https://github.com/robotology/yarp.git -b yarp-3.8 && \
-    cd yarp && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE     -DYARP_COMPILE_libYARP_math=ON     -DYARP_COMPILE_GUIS=ON     -DYARP_COMPILE_DEVICE_PLUGINS=ON     -DENABLE_yarpcar_mjpeg=ON     -DENABLE_yarpcar_depthimage=ON     -DENABLE_yarpcar_depthimage2=ON     -DENABLE_yarpcar_segmentationimage=ON     -DENABLE_yarpcar_portmonitor=ON     -DENABLE_yarpmod_fakeAnalogSensor=ON     -DENABLE_yarpmod_fakeBattery=ON      -DENABLE_yarpmod_fakeDepthCamera=ON     -DENABLE_yarpmod_fakeIMU=ON      -DENABLE_yarpmod_fakeLaser=ON      -DENABLE_yarpmod_fakeLocalizer=ON     -DENABLE_yarpmod_fakeMicrophone=ON      -DENABLE_yarpmod_fakeMotionControl=ON      -DENABLE_yarpmod_fakeNavigation=ON      -DENABLE_yarpmod_fakeSpeaker=ON      -DENABLE_yarpmod_fakebot=ON     -DENABLE_yarpmod_portaudioPlayer=ON     -DENABLE_yarpmod_portaudioRecorder=ON     -DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromExternalPort=ON     -DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromPointCloud=ON     -DENABLE_yarpmod_laserFromRosTopic=ON     -DENABLE_yarpmod_rpLidar3=ON  &&     make -j4 &&     sudo make install
+#RUN git clone https://github.com/robotology/yarp.git -b yarp-3.8 && \
+#    cd yarp && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE     -DYARP_COMPILE_libYARP_math=ON     #-DYARP_COMPILE_GUIS=ON     -DYARP_COMPILE_DEVICE_PLUGINS=ON     -DENABLE_yarpcar_mjpeg=ON     -DENABLE_yarpcar_depthimage=ON     #-DENABLE_yarpcar_depthimage2=ON     -DENABLE_yarpcar_segmentationimage=ON     -DENABLE_yarpcar_portmonitor=ON     #-DENABLE_yarpmod_fakeAnalogSensor=ON     -DENABLE_yarpmod_fakeBattery=ON      -DENABLE_yarpmod_fakeDepthCamera=ON     -DENABLE_yarpmod_fakeIMU=ON      #-DENABLE_yarpmod_fakeLaser=ON      -DENABLE_yarpmod_fakeLocalizer=ON     -DENABLE_yarpmod_fakeMicrophone=ON      #-DENABLE_yarpmod_fakeMotionControl=ON      -DENABLE_yarpmod_fakeNavigation=ON      -DENABLE_yarpmod_fakeSpeaker=ON      #-DENABLE_yarpmod_fakebot=ON     -DENABLE_yarpmod_portaudioPlayer=ON     -DENABLE_yarpmod_portaudioRecorder=ON     #-DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromExternalPort=ON     -DENABLE_yarpmod_laserFromDepth=ON     #-DENABLE_yarpmod_laserFromPointCloud=ON     -DENABLE_yarpmod_laserFromRosTopic=ON     -DENABLE_yarpmod_rpLidar3=ON  &&     make -j4 &&     sudo make #install
 
 
 RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
@@ -139,14 +141,13 @@ RUN git clone https://github.com/robotology/robotology-superbuild && \
     sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
 
 RUN cd robotology-superbuild && mkdir build && cd build && \
-    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
     make -j8 && make install -j8
 
 # Gazebo
-RUN curl -sSL http://get.gazebosim.org | sh
 
 # Gazebo Yarp Plugins
-RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && git checkout tags/v4.9.0 && mkdir build && cd build && \
+RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && git checkout tags/v4.11.2 && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE="Release "../ -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
     cmake --build . --target install
     
@@ -154,8 +155,8 @@ RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo
 COPY worlds /usr/share/gazebo-11/worlds
 
 # ergocub-software install
-RUN git clone https://github.com/SimoneMic/ergocub-software.git && cd ergocub-software && git switch wip-SimoneMic-ros2-default && \
-    mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && make -j8 && make install
+#RUN git clone https://github.com/SimoneMic/ergocub-software.git && cd ergocub-software && git switch wip-SimoneMic-ros2-default && \
+#    mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && make -j8 && make install
 
 # Environment setup for simulation
 ENV YARP_COLORED_OUTPUT=1
@@ -221,7 +222,7 @@ RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic
     cd ../../build/src/walking-controllers && make install -j
     
 # Install VisualStudio Code extensions
-RUN curl -fsSL https://code-server.dev/install.sh | sh &&code-server --install-extension ms-vscode.cpptools \
+RUN code --install-extension ms-vscode.cpptools \
 		--install-extension ms-vscode.cpptools-themes \
 		--install-extension ms-vscode.cmake-tools \
                 --install-extension ms-python.python \
