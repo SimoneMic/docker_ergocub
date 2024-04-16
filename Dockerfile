@@ -55,9 +55,17 @@ RUN locale-gen en_US en_US.UTF-8 &&   update-locale LC_ALL=en_US.UTF-8 LANG=en_U
 
 
 # ROS2 install
-RUN apt-get update  && apt-get install -y     python3-rosdep     python3-vcstool     python3-colcon-common-extensions     python3-colcon-mixin     ros-humble-control-msgs     ros-humble-controller-manager     ros-humble-desktop     ros-humble-generate-parameter-library     ros-humble-geometric-shapes     ros-humble-gripper-controllers     ros-humble-joint-state-broadcaster     ros-humble-joint-state-publisher     ros-humble-joint-trajectory-controller     ros-humble-moveit-common     ros-humble-moveit-configs-utils     ros-humble-moveit-core     ros-humble-moveit-hybrid-planning     ros-humble-moveit-msgs     ros-humble-moveit-resources-panda-moveit-config     ros-humble-moveit-ros-move-group     ros-humble-moveit-ros-perception     ros-humble-moveit-ros-planning     ros-humble-moveit-ros-planning-interface     ros-humble-moveit-ros-visualization     ros-humble-moveit-servo     ros-humble-moveit-visual-tools     ros-humble-moveit     ros-humble-rmw-cyclonedds-cpp     ros-humble-ros2-control     ros-humble-rviz-visual-tools     ros-humble-xacro   ros-humble-test-msgs  && apt-get clean
+RUN apt update && apt install -y python3-rosdep python3-vcstool python3-colcon-common-extensions  python3-colcon-mixin \
+    ros-iron-control-msgs     ros-iron-controller-manager     ros-iron-desktop     ros-iron-generate-parameter-library \
+    ros-iron-geometric-shapes     ros-iron-gripper-controllers     ros-iron-joint-state-broadcaster     ros-iron-joint-state-publisher \
+    ros-iron-joint-trajectory-controller     ros-iron-moveit-common     ros-iron-moveit-configs-utils     ros-iron-moveit-core  \
+    ros-iron-moveit-hybrid-planning     ros-iron-moveit-msgs     ros-iron-moveit-resources-panda-moveit-config    \
+    ros-iron-moveit-ros-move-group     ros-iron-moveit-ros-perception     ros-iron-moveit-ros-planning   \
+    ros-iron-moveit-ros-planning-interface     ros-iron-moveit-ros-visualization     ros-iron-moveit-servo     ros-iron-moveit-visual-tools   \
+    ros-iron-moveit     ros-iron-rmw-cyclonedds-cpp     ros-iron-ros2-control     ros-iron-rviz-visual-tools     ros-iron-xacro \
+    ros-iron-test-msgs   ros-iron-rqt* && apt clean
 
-ENV ROS_DISTRO=humble
+ENV ROS_DISTRO=iron
 
 #USER root 
 
@@ -117,9 +125,8 @@ RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-libav
 
-# YARP Standalone
-RUN git clone https://github.com/robotology/yarp.git -b yarp-3.8 && \
-    cd yarp && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE     -DYARP_COMPILE_libYARP_math=ON     -DYARP_COMPILE_GUIS=ON     -DYARP_COMPILE_DEVICE_PLUGINS=ON     -DENABLE_yarpcar_mjpeg=ON     -DENABLE_yarpcar_depthimage=ON     -DENABLE_yarpcar_depthimage2=ON     -DENABLE_yarpcar_segmentationimage=ON     -DENABLE_yarpcar_portmonitor=ON     -DENABLE_yarpmod_fakeAnalogSensor=ON     -DENABLE_yarpmod_fakeBattery=ON      -DENABLE_yarpmod_fakeDepthCamera=ON     -DENABLE_yarpmod_fakeIMU=ON      -DENABLE_yarpmod_fakeLaser=ON      -DENABLE_yarpmod_fakeLocalizer=ON     -DENABLE_yarpmod_fakeMicrophone=ON      -DENABLE_yarpmod_fakeMotionControl=ON      -DENABLE_yarpmod_fakeNavigation=ON      -DENABLE_yarpmod_fakeSpeaker=ON      -DENABLE_yarpmod_fakebot=ON     -DENABLE_yarpmod_portaudioPlayer=ON     -DENABLE_yarpmod_portaudioRecorder=ON     -DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromExternalPort=ON     -DENABLE_yarpmod_laserFromDepth=ON     -DENABLE_yarpmod_laserFromPointCloud=ON     -DENABLE_yarpmod_laserFromRosTopic=ON     -DENABLE_yarpmod_rpLidar3=ON  &&     make -j4 &&     sudo make install
+  RUN curl -sSL http://get.gazebosim.org | sh
+
 
 
 RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
@@ -131,23 +138,20 @@ RUN git clone https://github.com/robotology/robotology-superbuild && \
     sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
 
 RUN cd robotology-superbuild && mkdir build && cd build && \
-    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
     make -j8 && make install -j8
 
 # Gazebo
-RUN curl -sSL http://get.gazebosim.org | sh
 
 # Gazebo Yarp Plugins
-RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && mkdir build && cd build && \
+RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && git checkout tags/v4.11.2 && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE="Release "../ -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
     cmake --build . --target install
     
 # Adding custom worlds to gazebo
 COPY worlds /usr/share/gazebo-11/worlds
 
-# ergocub-software install
-RUN git clone https://github.com/SimoneMic/ergocub-software.git && cd ergocub-software && git switch wip-SimoneMic-ros2-default && \
-    mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && make -j8 && make install
+
 
 # Environment setup for simulation
 ENV YARP_COLORED_OUTPUT=1
@@ -156,7 +160,8 @@ ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:$WalkingControllers_INSTALL_DIR/share/yarp
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub
 ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub/robots:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub/robots
-ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share
+ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share:/usr/share/gazebo-11/models
+ENV GAZEBO_RESOURCE_PATH=/usr/share/gazebo-11/worlds:/usr/share/gazebo-11
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ICUBcontrib
 ENV PATH=${PATH}:/home/$USERNAME/robotology-superbuild/build/install/bin
 ENV GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:/home/$USERNAME/robotology-superbuild/build/install/lib
@@ -176,7 +181,7 @@ RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/
     echo "alias launch_wbd_interface='yarprobotinterface --config /home/$USERNAME/ergocub-software/urdf/ergoCub/conf/launch_wholebodydynamics_ecub.xml'" >> ~/.bashrc && \
     echo "alias merge_ports='yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches'" >> ~/.bashrc && \
     echo "alias col_build='colcon build --symlink-install'" >> ~/.bashrc && \
-    echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc && \
+    echo "source /opt/ros/iron/setup.bash" >> /home/$USERNAME/.bashrc && \
     echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
 EXPOSE 8080
@@ -186,7 +191,7 @@ EXPOSE 10000/tcp 10000/udp
 
 
 # Nav2
-RUN sudo apt update && sudo apt install -y ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-perception
+RUN sudo apt update && sudo apt install -y ros-iron-navigation2 ros-iron-nav2-bringup ros-iron-perception ros-iron-slam-toolbox ros-iron-gazebo-ros
 # Adding pointcloud to laserscan and ergocub_navigation on ROS2 WS
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
@@ -196,7 +201,14 @@ RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_works
     git clone https://github.com/SimoneMic/bt_nav2_ergocub.git && \
     git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
-ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/humble
+ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/iron
+    
+# Install BT Groot
+RUN sudo apt install -y qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev && \
+    git clone --recurse-submodules https://github.com/BehaviorTree/Groot.git && \
+    cd Groot && \
+    cmake -S . -B build && \
+    cmake --build build
     
 # Update walking-comtrollers in robotology superbuild to work in navigation
 RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic https://github.com/SimoneMic/walking-controllers && \
@@ -205,7 +217,7 @@ RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic
     cd ../../build/src/walking-controllers && make install -j
     
 # Install VisualStudio Code extensions
-RUN curl -fsSL https://code-server.dev/install.sh | sh &&code-server --install-extension ms-vscode.cpptools \
+RUN code --install-extension ms-vscode.cpptools \
 		--install-extension ms-vscode.cpptools-themes \
 		--install-extension ms-vscode.cmake-tools \
                 --install-extension ms-python.python \
@@ -216,7 +228,7 @@ CMD ["bash"]
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
     cd yarp-devices-ros2/ros2_interfaces_ws && \
-    source /opt/ros/humble/setup.sh && colcon build && \
+    source /opt/ros/iron/setup.sh && colcon build && \
     cd .. && mkdir build && cd build && \
     source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \
     echo "source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/local_setup.bash" >> ~/.bashrc
