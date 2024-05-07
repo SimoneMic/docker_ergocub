@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM ubuntu:22.04
 
 ARG RELEASE
@@ -125,62 +124,34 @@ RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-libav
 
-  RUN curl -sSL http://get.gazebosim.org | sh
-
+RUN git clone https://github.com/robotology/yarp && \
+    cd yarp && mkdir build && cd build && cmake .. && make
+ENV YARP_DATA_DIRS=/home/$USERNAME/yarp/build/share/yarp
+ENV YARP_DIR=/home/$USERNAME/yarp/build
+ENV PATH=${PATH}:${YARP_DIR}/bin
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${YARP_DIR}/lib
 
 
 RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
     sudo apt install -y glpk-doc glpk-utils libglpk-dev libglpk40
 
-# Superbuild cloning and installing
-RUN git clone https://github.com/robotology/robotology-superbuild && \
-    sudo chmod +x robotology-superbuild/scripts/install_apt_dependencies.sh && \
-    sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
-
-RUN cd robotology-superbuild && mkdir build && cd build && \
-    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
-    make -j8 && make install -j8
-
-# Gazebo
-
-# Gazebo Yarp Plugins
-RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && git checkout tags/v4.11.2 && mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE="Release "../ -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
-    cmake --build . --target install
-    
-# Adding custom worlds to gazebo
-COPY worlds /usr/share/gazebo-11/worlds
-
-
-
 # Environment setup for simulation
 ENV YARP_COLORED_OUTPUT=1
-ENV WalkingControllers_INSTALL_DIR=/home/$USERNAME/robotology-superbuild/build/install
-ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:$WalkingControllers_INSTALL_DIR/share/yarp
-ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub
-ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub
-ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub/robots:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub/robots
-ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share:/usr/share/gazebo-11/models
-ENV GAZEBO_RESOURCE_PATH=/usr/share/gazebo-11/worlds:/usr/share/gazebo-11
-ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ICUBcontrib
-ENV PATH=${PATH}:/home/$USERNAME/robotology-superbuild/build/install/bin
-ENV GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:/home/$USERNAME/robotology-superbuild/build/install/lib
-ENV YARP_ROBOT_NAME=ergoCubGazeboV1
-
-# Bimanual
-RUN git clone https://github.com/Woolfrey/ergocub-bimanual.git && cd ergocub-bimanual && mkdir build && cd build && \
-    cmake .. && make -j
+ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:/home/$USERNAME/yarp/build/share/yarp
+#ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub
+#ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub
+#ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ICUBcontrib
+#ENV PATH=${PATH}:/home/$USERNAME/robotology-superbuild/build/install/bin
+ENV YARP_ROBOT_NAME=ergoCubSN002
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=/home/$USERNAME/ros2_workspace/src/ergocub_navigation/config/cyclonedds.xml
 
 # Bashrc setup
-RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/bin" >> ~/.bashrc && \
-    echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
-    echo "alias 1_clock_export='export YARP_CLOCK=/clock'" >> ~/.bashrc && \
-    echo "alias 2_gazebo='export YARP_CLOCK=/clock && gazebo -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
-    echo "alias 3_gazebo_warehouse='export YARP_CLOCK=/clock && gazebo worlds/SmallWarehouseScen3.world -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
-    echo "alias walking_retargeting='YARP_CLOCK=/clock WalkingModule --from /home/$USERNAME/robotology-superbuild/src/walking-controllers/src/WalkingModule/app/robots/ergoCubGazeboV1/dcm_walking_iFeel_joint_retargeting.ini'" >> ~/.bashrc && \
-    echo "alias launch_wbd_interface='yarprobotinterface --config /home/$USERNAME/ergocub-software/urdf/ergoCub/conf/launch_wholebodydynamics_ecub.xml'" >> ~/.bashrc && \
+RUN echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
     echo "alias merge_ports='yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches'" >> ~/.bashrc && \
-    echo "alias col_build='colcon build --symlink-install'" >> ~/.bashrc && \
+    echo "alias build_nav='colcon build --symlink-install'" >> ~/.bashrc && \
+    echo "alias nav_cd='cd /home/$USERNAME/ros2_workspace'" >> ~/.bashrc && \
+    echo "bimanual_connection='yarp connect /bimanualUpperRefs /walking-coordinator/humanState:i'" >> ~/.bashrc && \
     echo "source /opt/ros/iron/setup.bash" >> /home/$USERNAME/.bashrc && \
     echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
@@ -197,24 +168,11 @@ SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
     /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.sh && colcon build"  && \
     cd src && \
-    git clone https://github.com/SimoneMic/ergocub_navigation.git && \
-    git clone https://github.com/SimoneMic/bt_nav2_ergocub.git && \
+    git clone https://github.com/hsp-iit/ergocub_navigation.git && \
+    git clone https://github.com/hsp-iit/bt_nav2_ergocub.git && \
     git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/iron
-    
-# Install BT Groot
-RUN sudo apt install -y qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev && \
-    git clone --recurse-submodules https://github.com/BehaviorTree/Groot.git && \
-    cd Groot && \
-    cmake -S . -B build && \
-    cmake --build build
-    
-# Update walking-comtrollers in robotology superbuild to work in navigation
-RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic https://github.com/SimoneMic/walking-controllers && \
-    git fetch SimoneMic && \
-    git checkout SimoneMic/ergoCub_SN000 && \
-    cd ../../build/src/walking-controllers && make install -j
     
 # Install VisualStudio Code extensions
 RUN code --install-extension ms-vscode.cpptools \
@@ -240,5 +198,7 @@ ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/sha
 
 WORKDIR /home/$USERNAME
 
-RUN sudo apt install -y mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+# overwrite the env variable by mounting the correct file from docker run script
+ENV CYCLONEDDS_URI=/home/$USERNAME/cyclonedds.xml
 
+RUN sudo apt install -y mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb

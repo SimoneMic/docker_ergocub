@@ -1,6 +1,6 @@
 #!/bin/bash
 NAME=simonemiche/ergocub_nav_base
-TAG=tmp
+TAG=ergocubSN002     
 
 sudo xhost +
 sudo docker run \
@@ -10,6 +10,6 @@ sudo docker run \
      -e DISPLAY=unix${DISPLAY} \
      --device /dev/dri/card0:/dev/dri/card0 \
      -v /tmp/.X11-unix:/tmp/.X11-unix \
+     -v ./config/yarp.conf:/home/ecub_docker/.config/yarp/yarp.conf \
+     -v ./config/cyclonedds.xml:/home/ecub_docker/cyclonedds.xml \
      ${NAME}:${TAG} bash
-
-     #-v /home/simomic/rosbag2_2024_01_11-16_35_16:/home/ecub_docker/rosbags \
