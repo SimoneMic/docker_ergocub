@@ -125,7 +125,14 @@ RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
   gstreamer1.0-libav
 
 RUN git clone https://github.com/robotology/yarp && \
-    cd yarp && mkdir build && cd build && cmake .. && make
+    cd yarp && mkdir build && cd build && cmake .. \
+    -DENABLE_yarpcar_mjpeg=ON \
+    -DENABLE_yarppm_bottle_compression_zlib=ON \
+    -DENABLE_yarppm_depthimage_compression_zlib=ON \
+    -DENABLE_yarppm_image_compression_ffmpeg=ON \
+    -DENABLE_yarpmod_rangefinder2D_nws_yarp=ON \
+    -DENABLE_yarpmod_rangefinder2D_nwc_yarp=ON \
+    && make -j9
 ENV YARP_DATA_DIRS=/home/$USERNAME/yarp/build/share/yarp
 ENV YARP_DIR=/home/$USERNAME/yarp/build
 ENV PATH=${PATH}:${YARP_DIR}/bin
@@ -197,6 +204,8 @@ ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/sha
 #:/home/$USERNAME/robotology-superbuild/build/install/share/yarp-devices-ros2
 
 WORKDIR /home/$USERNAME
+
+RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-software && mkdir build && cd build && cmake .. && make -j4
 
 # overwrite the env variable by mounting the correct file from docker run script
 ENV CYCLONEDDS_URI=/home/$USERNAME/cyclonedds.xml
