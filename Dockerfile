@@ -158,18 +158,19 @@ RUN echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
     echo "alias merge_ports='yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches'" >> ~/.bashrc && \
     echo "alias build_nav='colcon build --symlink-install'" >> ~/.bashrc && \
     echo "alias nav_cd='cd /home/$USERNAME/ros2_workspace'" >> ~/.bashrc && \
-    echo "bimanual_connection='yarp connect /bimanualUpperRefs /walking-coordinator/humanState:i'" >> ~/.bashrc && \
+    echo "alias bimanual_connection='yarp connect /bimanualUpperRefs /walking-coordinator/humanState:i'" >> ~/.bashrc && \
     echo "source /opt/ros/iron/setup.bash" >> /home/$USERNAME/.bashrc && \
-    echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
+    echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc && \
+    echo "alias walking_retargeting_nav='WalkingModule --from dcm_walking_iFeel_joint_retargeting_navigation_strict.ini'" >> /home/$USERNAME/.bashrc &&\
+    echo "alias walking_retargeting_joy='WalkingModule --from dcm_walking_iFeel_joint_retargeting.ini'" >> /home/$USERNAME/.bashrc
 
 EXPOSE 8080
 EXPOSE 8888
 EXPOSE 6080
 EXPOSE 10000/tcp 10000/udp
 
-
 # Nav2
-RUN sudo apt update && sudo apt install -y ros-iron-navigation2 ros-iron-nav2-bringup ros-iron-perception ros-iron-slam-toolbox ros-iron-gazebo-ros
+RUN sudo apt update && sudo apt install -y ros-$ROS_DISTRO-navigation2 ros-$ROS_DISTRO-nav2-bringup ros-$ROS_DISTRO-perception ros-$ROS_DISTRO-slam-toolbox ros-$ROS_DISTRO-gazebo-ros
 # Adding pointcloud to laserscan and ergocub_navigation on ROS2 WS
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
@@ -179,7 +180,7 @@ RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_works
     git clone https://github.com/hsp-iit/bt_nav2_ergocub.git && \
     git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
-ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/iron
+ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/$ROS_DISTRO
     
 # Install VisualStudio Code extensions
 RUN code --install-extension ms-vscode.cpptools \
@@ -193,7 +194,7 @@ CMD ["bash"]
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
     cd yarp-devices-ros2/ros2_interfaces_ws && \
-    source /opt/ros/iron/setup.sh && colcon build && \
+    source /opt/ros/$ROS_DISTRO/setup.sh && colcon build && \
     cd .. && mkdir build && cd build && \
     source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \
     echo "source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/local_setup.bash" >> ~/.bashrc
