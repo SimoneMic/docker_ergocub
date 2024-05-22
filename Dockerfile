@@ -101,7 +101,7 @@ ARG BUILD_TYPE=Release
 
 # YARP Standalone dep
 RUN git clone https://github.com/robotology/ycm.git -b master && \
-    cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j4 &&     sudo make install
+    cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j8 &&     sudo make install
 
 RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
   ycm-cmake-modules \
@@ -213,15 +213,15 @@ RUN sudo apt install -y qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev && \
 # Update walking-comtrollers in robotology superbuild to work in navigation
 RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic https://github.com/SimoneMic/walking-controllers && \
     git fetch SimoneMic && \
-    git checkout SimoneMic/ergoCub_SN000 && \
+    git switch ergoCub_SN001_master_merged && \
     cd ../../build/src/walking-controllers && make install -j
     
 # Install VisualStudio Code extensions
-RUN code --install-extension ms-vscode.cpptools \
-		--install-extension ms-vscode.cpptools-themes \
-		--install-extension ms-vscode.cmake-tools \
-                --install-extension ms-python.python \
-                --install-extension eamodio.gitlens
+#RUN code --install-extension ms-vscode.cpptools \
+#		--install-extension ms-vscode.cpptools-themes \
+#		--install-extension ms-vscode.cmake-tools \
+#                --install-extension ms-python.python \
+#                --install-extension eamodio.gitlens
 
 # yarp-devices-ros2
 CMD ["bash"]
@@ -237,6 +237,14 @@ RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
     #cmake --build build --target install
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/share/yarp:/home/$USERNAME/yarp-devices-ros2/build/share/yarp-devices-ros2   
 #:/home/$USERNAME/robotology-superbuild/build/install/share/yarp-devices-ros2
+
+# ergocub-software for ros2
+RUN cd robotology-superbuild/src/ergocub-software &&\
+    git remote add simomic https://github.com/SimoneMic/ergocub-software && \
+    git fetch simomic && \
+    git switch ros2 && \
+    cd ../../build/src/ergocub-software && \
+    cmake . && make install
 
 WORKDIR /home/$USERNAME
 
