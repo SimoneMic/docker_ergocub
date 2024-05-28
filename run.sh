@@ -1,6 +1,6 @@
 #!/bin/bash
 NAME=simonemiche/ergocub_nav_base
-TAG=tmp
+TAG=latest
 
 sudo xhost +
 sudo docker run \

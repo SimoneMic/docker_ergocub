@@ -141,8 +141,6 @@ RUN cd robotology-superbuild && mkdir build && cd build && \
     export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
     make -j8 && make install -j8
 
-# Gazebo
-
 # Gazebo Yarp Plugins
 RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo-yarp-plugins && git checkout tags/v4.11.2 && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE="Release "../ -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
@@ -173,12 +171,13 @@ RUN git clone https://github.com/Woolfrey/ergocub-bimanual.git && cd ergocub-bim
 
 # Bashrc setup
 RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/bin" >> ~/.bashrc && \
+    echo "alias goToBuildSuperbuild='cd ../../build/src/${PWD##*/}'" >> ~/.bashrc && \
     echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
     echo "alias 1_clock_export='export YARP_CLOCK=/clock'" >> ~/.bashrc && \
     echo "alias 2_gazebo='export YARP_CLOCK=/clock && gazebo -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
     echo "alias 3_gazebo_warehouse='export YARP_CLOCK=/clock && gazebo worlds/SmallWarehouseScen3.world -s libgazebo_yarp_clock.so -s libgazebo_ros_init.so'" >> ~/.bashrc && \
     echo "alias walking_retargeting='YARP_CLOCK=/clock WalkingModule --from /home/$USERNAME/robotology-superbuild/src/walking-controllers/src/WalkingModule/app/robots/ergoCubGazeboV1/dcm_walking_iFeel_joint_retargeting.ini'" >> ~/.bashrc && \
-    echo "alias launch_wbd_interface='yarprobotinterface --config /home/$USERNAME/ergocub-software/urdf/ergoCub/conf/launch_wholebodydynamics_ecub.xml'" >> ~/.bashrc && \
+    echo "alias launch_wbd_interface='yarprobotinterface --config /home/$USERNAME/robotology-superbuild/src/ergocub-software/urdf/ergoCub/conf/launch_wholebodydynamics_ecub.xml'" >> ~/.bashrc && \
     echo "alias merge_ports='yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches'" >> ~/.bashrc && \
     echo "alias col_build='colcon build --symlink-install'" >> ~/.bashrc && \
     echo "source /opt/ros/iron/setup.bash" >> /home/$USERNAME/.bashrc && \
@@ -214,14 +213,14 @@ RUN sudo apt install -y qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev && \
 RUN cd robotology-superbuild/src/walking-controllers && git remote add SimoneMic https://github.com/SimoneMic/walking-controllers && \
     git fetch SimoneMic && \
     git switch ergoCub_SN001_master_merged && \
-    cd ../../build/src/walking-controllers && make install -j
-    
+    cd ../../build/src/walking-controllers && make install -j && cd .
+
 # Install VisualStudio Code extensions
-#RUN code --install-extension ms-vscode.cpptools \
-#		--install-extension ms-vscode.cpptools-themes \
-#		--install-extension ms-vscode.cmake-tools \
-#                --install-extension ms-python.python \
-#                --install-extension eamodio.gitlens
+RUN code --install-extension ms-vscode.cpptools \
+		--install-extension ms-vscode.cpptools-themes \
+		--install-extension ms-vscode.cmake-tools \
+                --install-extension ms-python.python \
+                --install-extension eamodio.gitlens
 
 # yarp-devices-ros2
 CMD ["bash"]
@@ -246,7 +245,18 @@ RUN cd robotology-superbuild/src/ergocub-software &&\
     cd ../../build/src/ergocub-software && \
     cmake . && make install
 
+# ergocub-gaze-controller and rpc interfaces
+RUN git clone https://github.com/hsp-iit/ergocub-rpc-interfaces && \
+    cd ergocub-rpc-interfaces/ecub_gaze_controller/cpp_library && mkdir build && cd build && \
+    cmake .. && \
+    sudo make install -j6 && \
+    cd && \
+    git clone https://github.com/SimoneMic/ergocub-gaze-control && \
+    cd ergocub-gaze-control && mkdir build && cd build && \
+    cmake -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
+    make install -j5 && \
+    cd && echo "alias run_gaze_controller='cd /home/ecub_docker/ergocub-gaze-control/build/bin && ./ergocub-gaze-control /home/ecub_docker/ergocub-gaze-control/ecub_config.ini'" >> ~/.bashrc
+
 WORKDIR /home/$USERNAME
 
 RUN sudo apt install -y mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
-
