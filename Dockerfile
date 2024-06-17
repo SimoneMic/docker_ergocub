@@ -41,11 +41,9 @@ RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends wget 
 RUN sudo apt update && DEBIAN_FRONTEND=noninteractive sudo apt install ffmpeg libsm6 libxext6 -y
 
 # Installing VLMaps
-RUN git clone https://github.com/vlmaps/vlmaps.git
+RUN git clone https://github.com/SimoneMic/vlmaps.git
 RUN /home/${USER}/mambaforge/bin/mamba create -n vlmaps python=3.8 -y  
 #RUN echo "mamba activate vlmaps" >> /home/${USER}/.bashrc
-
-# COPY install.bash /home/${USER}/vlmaps/
 
 RUN cd vlmaps && \
     /home/${USER}/mambaforge/envs/vlmaps/bin/pip install -r requirements.txt
@@ -55,11 +53,30 @@ RUN cd Hierarchical-Localization/ &&\
     /home/${USER}/mambaforge/envs/vlmaps/bin/pip install -e .
 RUN /home/${USER}/mambaforge/bin/mamba run -n vlmaps /home/${USER}/mambaforge/bin/mamba install habitat-sim=0.2.2 -c conda-forge -c aihabitat -y
 
-# Google chrome
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-RUN sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+# ROS2 Install
+ENV ROS_DISTRO=iron
+RUN sudo apt update && sudo apt install -y locales && sudo locale-gen en_US en_US.UTF-8 \
+    && sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    && export LANG=en_US.UTF-8
+    
+RUN sudo apt install software-properties-common -y\
+    && sudo add-apt-repository universe \
+    && sudo apt update && sudo apt install curl -y
+    
+RUN sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg 
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+    
+RUN sudo apt update && sudo apt install ros-$ROS_DISTRO-ros-base \
+    ros-$ROS_DISTRO-sensor-msgs ros-$ROS_DISTRO-geometry-msgs \
+    ros-$ROS_DISTRO-action-msgs ros-$ROS_DISTRO-actionlib-msgs \
+    ros-$ROS_DISTRO-nav2-msgs ros-$ROS_DISTRO-cv-bridge ros-$ROS_DISTRO-nav2-simple-commander ros-dev-tools -y
+
+RUN sudo apt update && sudo apt install ros-$ROS_DISTRO-rmw-cyclonedds-cpp -y
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/${USER}/.bashrc
 
 # Cleanup
 RUN /home/${USER}/mambaforge/bin/mamba clean --all -y
-RUN sudo apt update && sudo apt install -y firefox terminator bash-completion gedit mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+RUN sudo apt update && sudo apt install -y unzip firefox terminator bash-completion gedit mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
 RUN echo "mamba activate vlmaps" >> /home/${USER}/.bashrc
