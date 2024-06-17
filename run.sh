@@ -1,6 +1,6 @@
 #!/bin/bash
-NAME=simonemiche/ergocub_nav_base
-TAG=latest
+NAME=simonemiche/vlm_navigation
+TAG=vlmaps
 
 sudo xhost +
 sudo docker run \
