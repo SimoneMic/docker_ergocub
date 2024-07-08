@@ -1,16 +1,9 @@
-# syntax=docker/dockerfile:1
 FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
 
 ARG RELEASE
 ARG LAUNCHPAD_BUILD_ARCH
 ENV USER=ergocub
 ARG PASSWORD=ergocub
-
-ARG CONDA_SCRIPT=Mambaforge-Linux-x86_64.sh
-ARG CONDA_LINK=https://github.com/conda-forge/miniforge/releases/latest/download/${CONDA_SCRIPT}
-ENV CONDA_MD5=aef279d6baea7f67940f16aad17ebe5f6aac97487c7c03466ff01f4819e5a651
-
-ENV PYTHONDONTWRITEBYTECODE=true
 
 RUN ln -fs /usr/share/zoneinfo/Europe/Rome /etc/localtime && \
     apt update &&\
@@ -26,32 +19,9 @@ RUN addgroup ${USER} \
 USER ${USER}
 WORKDIR /home/${USER}
 
-# Installing mamba
-RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends wget bzip2 \
-    && wget ${CONDA_LINK} \
-    && bash ./${CONDA_SCRIPT} -b \
-    && /home/${USER}/mambaforge/bin/mamba init bash \
-    && sudo find /home/${USER}/mambaforge -follow -type f -name '*.a' -delete \
-    && sudo find /home/${USER}/mambaforge -follow -type f -name '*.pyc' -delete \
-    && /home/${USER}/mambaforge/bin/mamba clean -afy \
-    && rm ${CONDA_SCRIPT}
-
 # # Installing python packages
 # Can't use env.yml because cuda install asks to accept agreement
 RUN sudo apt update && DEBIAN_FRONTEND=noninteractive sudo apt install ffmpeg libsm6 libxext6 -y
-
-# Installing VLMaps
-RUN git clone https://github.com/SimoneMic/vlmaps.git
-RUN /home/${USER}/mambaforge/bin/mamba create -n vlmaps python=3.8 -y  
-#RUN echo "mamba activate vlmaps" >> /home/${USER}/.bashrc
-
-RUN cd vlmaps && \
-    /home/${USER}/mambaforge/envs/vlmaps/bin/pip install -r requirements.txt
-RUN cd ~ &&\
-    git clone --recursive https://github.com/cvg/Hierarchical-Localization/
-RUN cd Hierarchical-Localization/ &&\
-    /home/${USER}/mambaforge/envs/vlmaps/bin/pip install -e .
-RUN /home/${USER}/mambaforge/bin/mamba run -n vlmaps /home/${USER}/mambaforge/bin/mamba install habitat-sim=0.2.2 -c conda-forge -c aihabitat -y
 
 # ROS2 Install
 ENV ROS_DISTRO=iron
@@ -76,7 +46,50 @@ ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/${USER}/.bashrc
 
+# VS code
+RUN wget -O- https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/vscode.gpg && \
+    echo deb [arch=amd64 signed-by=/usr/share/keyrings/vscode.gpg] https://packages.microsoft.com/repos/vscode stable main | sudo tee /etc/apt/sources.list.d/vscode.list
+RUN sudo apt update && sudo apt install -y code
+# Install VisualStudio Code extensions
+RUN code --install-extension ms-vscode.cpptools \
+		--install-extension ms-vscode.cpptools-themes \
+		--install-extension ms-vscode.cmake-tools \
+                --install-extension ms-python.python \
+                --install-extension eamodio.gitlens
+
+# Git Setup
+ARG GIT_USERNAME
+ARG GIT_USER_EMAIL
+RUN git config --global user.name ${GIT_USERNAME} && git config --global user.email ${GIT_USER_EMAIL}
+# Installing VLMaps
+RUN git clone https://github.com/SimoneMic/vlmaps.git
+RUN sudo apt update && sudo apt install -y python3-pip
+# Manually install requirements - we don't need all the requirements
+RUN sudo apt update && sudo apt install python3-opencv python3-shapely -y
+RUN pip3 install hydra-core gdown openai-clip torch torchvision h5py timm pyvisgraph pytorch_lightning
+#shapely serve ma da problemi con numpy -> installato con apt?
+RUN echo "export PYTHONPATH=$PYTHONPATH:/home/${USER}/vlmaps" >> /home/${USER}/.bashrc
+RUN pip3 install matplotlib "numpy == 1.21.5"
+RUN pip3 install open3d "numpy == 1.21.5"
+
+ENV PYTHONPATH=$"${PYTHONPATH}:/home/${USER}/vlmaps"
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/${USER}/.bashrc
+
+# Clip backbone
+RUN wget https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt && \
+    mkdir ~/.cache/clip && mv ViT-B-32.pt ~/.cache/clip/ViT-B-32.pt
+# Hugging Face Model
+#RUN sudo apt update && sudo apt install git-lfs -y &&\
+#    git lfs install && \
+#    mkdir -p /home/${USER}/.cache/huggingface/hub && cd /home/${USER}/.cache/huggingface/hub &&\
+#    git clone https://huggingface.co/timm/vit_large_patch16_384.augreg_in21k_ft_in1k
+
+# Update repo
+RUN cd vlmaps && git pull && git switch feat-ros2 && cd vlmaps/lseg && mkdir checkpoints && cd
+# Set checkpoints
+COPY ./demo_e200.ckpt /home/${USER}/vlmaps/vlmaps/lseg/checkpoints/demo_e200.ckpt
+# Hugging Face Model
+COPY ./download_hf_model.py /home/${USER}/download_hf_model.py
+RUN python3 download_hf_model.py
 # Cleanup
-RUN /home/${USER}/mambaforge/bin/mamba clean --all -y
-RUN sudo apt update && sudo apt install -y unzip firefox terminator bash-completion gedit mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
-RUN echo "mamba activate vlmaps" >> /home/${USER}/.bashrc
+RUN sudo apt update && sudo apt install -y unzip terminator bash-completion gedit mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb

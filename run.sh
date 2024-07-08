@@ -1,6 +1,6 @@
 #!/bin/bash
 NAME=simonemiche/vlm_navigation
-TAG=vlmaps
+TAG=vlmap_light
 
 sudo xhost +
 sudo docker run \
