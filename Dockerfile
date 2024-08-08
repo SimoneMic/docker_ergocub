@@ -35,7 +35,7 @@ RUN sudo apt install software-properties-common -y\
     
 RUN sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg 
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-    
+
 RUN sudo apt update && sudo apt install ros-$ROS_DISTRO-ros-base \
     ros-$ROS_DISTRO-sensor-msgs ros-$ROS_DISTRO-geometry-msgs \
     ros-$ROS_DISTRO-action-msgs ros-$ROS_DISTRO-actionlib-msgs \
@@ -78,18 +78,22 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/${USER}/.bashrc
 # Clip backbone
 RUN wget https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt && \
     mkdir ~/.cache/clip && mv ViT-B-32.pt ~/.cache/clip/ViT-B-32.pt
-# Hugging Face Model
-#RUN sudo apt update && sudo apt install git-lfs -y &&\
-#    git lfs install && \
-#    mkdir -p /home/${USER}/.cache/huggingface/hub && cd /home/${USER}/.cache/huggingface/hub &&\
-#    git clone https://huggingface.co/timm/vit_large_patch16_384.augreg_in21k_ft_in1k
 
 # Update repo
-RUN cd vlmaps && git pull && git switch feat-ros2 && cd vlmaps/lseg && mkdir checkpoints && cd
+SHELL ["/bin/bash", "-c"]
+RUN cd vlmaps && git pull && git switch feat-ros2 && cd vlmaps/lseg && mkdir checkpoints && cd && \
+    cd vlmaps/ros2_vlmaps_interfaces && source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w && \
+    echo "source /home/${USER}/vlmaps/ros2_vlmaps_interfaces/install/local_setup.bash" >> /home/${USER}/.bashrc
 # Set checkpoints
 COPY ./demo_e200.ckpt /home/${USER}/vlmaps/vlmaps/lseg/checkpoints/demo_e200.ckpt
 # Hugging Face Model
 COPY ./download_hf_model.py /home/${USER}/download_hf_model.py
 RUN python3 download_hf_model.py
+
+#ENV CYCLONEDDS_URI=/home/${USER}/cyclonedds.xml
+
+COPY ./generate_cyclone_config.sh /home/${USER}/generate_cyclone_config.sh
 # Cleanup
-RUN sudo apt update && sudo apt install -y unzip terminator bash-completion gedit mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+RUN sudo apt update && sudo apt install -y iproute2 unzip terminator bash-completion gedit mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+
+CMD ["bash", "-c", ". generate_cyclone_config.sh"]
