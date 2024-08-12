@@ -257,6 +257,22 @@ RUN git clone https://github.com/hsp-iit/ergocub-rpc-interfaces && \
     make install -j5 && \
     cd && echo "alias run_gaze_controller='cd /home/ecub_docker/ergocub-gaze-control/build/bin && ./ergocub-gaze-control /home/ecub_docker/ergocub-gaze-control/ecub_config.ini'" >> ~/.bashrc
 
+# metaCub
+RUN sudo apt update && sudo apt install -y python3-pip
+RUN pip3 install scipy open3d "numpy == 1.22.0"
+#RUN sudo apt install -y mesa-libgl-cos6-x86_64
+RUN cd robotology-superbuild/src/YARP/bindings && mkdir build && cd build &&\
+    cmake -DCREATE_PYTHON=ON -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
+    make install -j4
+ENV PYTHONPATH=${PYTHONPATH}:/home/$USERNAME/robotology-superbuild/build/install/lib/python3/dist-packages:/home/$USERNAMErobotology-superbuild/src/YARP/bindings/build
+RUN git clone https://github.com/hsp-iit/metaCub -b new_main && \
+    cd metaCub/cpp && mkdir build && cd build && cmake -DALLOW_IDL_GENERATION=ON -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
+    make install -j4
+RUN git clone https://github.com/hsp-iit/ergocub-realsense-pose && \
+    cd ergocub-realsense-pose && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install .. && \
+    make install -j4
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/$USERNAME/robotology-superbuild/build/install/lib
+
 WORKDIR /home/$USERNAME
 
 RUN sudo apt install -y mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb

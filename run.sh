@@ -1,5 +1,5 @@
 #!/bin/bash
-NAME=simonemiche/ergocub_nav_base
+NAME=simonemiche/metacub
 TAG=latest
 
 sudo xhost +
