@@ -1,6 +1,6 @@
 #!/bin/bash
 NAME=simonemiche/ergocub_nav_base
-TAG=latest
+TAG=turtlebot
 
 sudo xhost +
 sudo docker run \
