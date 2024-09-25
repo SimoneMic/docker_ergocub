@@ -134,11 +134,13 @@ RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash
 
 # Superbuild cloning and installing
 RUN git clone https://github.com/robotology/robotology-superbuild && \
-    sudo chmod +x robotology-superbuild/scripts/install_apt_dependencies.sh && \
-    sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
+    cd robotology-superbuild && git checkout v2024.05.0 && \
+    sudo chmod +x install_apt_dependencies.sh && \
+    sudo bash ./scripts/install_apt_dependencies.sh && \
+    sudo bash ./scripts/install_apt_python_dependencies.sh
 
 RUN cd robotology-superbuild && mkdir build && cd build && \
-    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_USES_PYTHON=ON -DROBOTOLOGY_ENABLE_DYNAMICS=ON -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=ON .. && \
     make -j8 && make install -j8
 
 # Gazebo Yarp Plugins
@@ -149,7 +151,9 @@ RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo
 # Adding custom worlds to gazebo
 COPY worlds /usr/share/gazebo-11/worlds
 
-
+# Bimanual
+RUN git clone https://github.com/Woolfrey/ergocub-bimanual.git && cd ergocub-bimanual && mkdir build && cd build && \
+    cmake .. && make -j
 
 # Environment setup for simulation
 ENV YARP_COLORED_OUTPUT=1
@@ -159,15 +163,15 @@ ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub
 ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share/iCub/robots:/home/$USERNAME/robotology-superbuild/build/install/share/ergoCub/robots
 ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/$USERNAME/robotology-superbuild/build/install/share:/usr/share/gazebo-11/models
+ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/ecub_docker/ergocub-bimanual/gazebo/worlds
 ENV GAZEBO_RESOURCE_PATH=/usr/share/gazebo-11/worlds:/usr/share/gazebo-11
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/robotology-superbuild/build/install/share/ICUBcontrib
 ENV PATH=${PATH}:/home/$USERNAME/robotology-superbuild/build/install/bin
 ENV GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:/home/$USERNAME/robotology-superbuild/build/install/lib
 ENV YARP_ROBOT_NAME=ergoCubGazeboV1
+ENV PYTHONPATH=${PYTHONPATH}:/home/$USERNAME/$USERNAME/robotology-superbuild/build/install/lib/python3
 
-# Bimanual
-RUN git clone https://github.com/Woolfrey/ergocub-bimanual.git && cd ergocub-bimanual && mkdir build && cd build && \
-    cmake .. && make -j
+
 
 # Bashrc setup
 RUN echo "export PATH=$PATH:/home/$USERNAME/robotology-superbuild/build/install/bin" >> ~/.bashrc && \
@@ -196,8 +200,8 @@ SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
     /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.sh && colcon build"  && \
     cd src && \
-    git clone https://github.com/SimoneMic/ergocub_navigation.git && \
-    git clone https://github.com/SimoneMic/bt_nav2_ergocub.git && \
+    git clone https://github.com/hsp-iit/ergocub_navigation.git && \
+    git clone https://github.com/hsp-iit/bt_nav2_ergocub.git && \
     git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/iron
