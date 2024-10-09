@@ -100,37 +100,32 @@ RUN git config --global user.name ${GIT_USERNAME} && git config --global user.em
 ARG BUILD_TYPE=Release
 
 # YARP Standalone dep
-RUN git clone https://github.com/robotology/ycm.git -b master && \
-    cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j8 &&     sudo make install
+#RUN git clone https://github.com/robotology/ycm.git -b master && \
+#    cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j8 &&     sudo make install
+#
+#RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
+#  ycm-cmake-modules \
+#  libeigen3-dev \
+#  libace-dev \
+#  libedit-dev \
+#  libsqlite3-dev \
+#  libtinyxml-dev \
+#  qtbase5-dev qtdeclarative5-dev qtmultimedia5-dev \
+#  qml-module-qtquick2 qml-module-qtquick-window2 \
+#  qml-module-qtmultimedia qml-module-qtquick-dialogs \
+#  qml-module-qtquick-controls qml-module-qt-labs-folderlistmodel \
+#  qml-module-qt-labs-settings \
+#  libqcustomplot-dev \
+#  libgraphviz-dev \
+#  libjpeg-dev \
+#  gedit \
+#  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+#  gstreamer1.0-plugins-base \
+#  gstreamer1.0-plugins-good \
+#  gstreamer1.0-plugins-bad \
+#  gstreamer1.0-libav
 
-RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
-  ycm-cmake-modules \
-  libeigen3-dev \
-  libace-dev \
-  libedit-dev \
-  libsqlite3-dev \
-  libtinyxml-dev \
-  qtbase5-dev qtdeclarative5-dev qtmultimedia5-dev \
-  qml-module-qtquick2 qml-module-qtquick-window2 \
-  qml-module-qtmultimedia qml-module-qtquick-dialogs \
-  qml-module-qtquick-controls qml-module-qt-labs-folderlistmodel \
-  qml-module-qt-labs-settings \
-  libqcustomplot-dev \
-  libgraphviz-dev \
-  libjpeg-dev \
-  gedit \
-  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-  gstreamer1.0-plugins-base \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-libav
-
-  RUN curl -sSL http://get.gazebosim.org | sh
-
-
-
-RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
-    sudo apt install -y glpk-doc glpk-utils libglpk-dev libglpk40
+RUN curl -sSL http://get.gazebosim.org | sh
 
 # Superbuild cloning and installing
 RUN git clone https://github.com/robotology/robotology-superbuild && \
@@ -149,7 +144,8 @@ RUN git clone https://github.com/robotology/gazebo-yarp-plugins.git && cd gazebo
 # Adding custom worlds to gazebo
 COPY worlds /usr/share/gazebo-11/worlds
 
-
+RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
+    sudo apt install -y glpk-doc glpk-utils libglpk-dev libglpk40
 
 # Environment setup for simulation
 ENV YARP_COLORED_OUTPUT=1
@@ -223,19 +219,19 @@ RUN code --install-extension ms-vscode.cpptools \
                 --install-extension eamodio.gitlens
 
 # yarp-devices-ros2
+### Issue with param parser and yarp version: switch to master (could break something)
+#RUN cd robotology-superbuild/src/YARP && git switch master && cd ../../build/src/YARP && cmake . && make install -j8
 CMD ["bash"]
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
     cd yarp-devices-ros2/ros2_interfaces_ws && \
+    git checkout 69208276f44aa34cb7d10454327bba8811e363e6 && \
     source /opt/ros/iron/setup.sh && colcon build && \
     cd .. && mkdir build && cd build && \
-    source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \
+    source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j8 && \
     echo "source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/local_setup.bash" >> ~/.bashrc
-    #cmake -S. -Bbuild -DCMAKE_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build/install -DBUILD_TESTING=OFF && \
-    #cmake --build build && \
-    #cmake --build build --target install
+
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/share/yarp:/home/$USERNAME/yarp-devices-ros2/build/share/yarp-devices-ros2   
-#:/home/$USERNAME/robotology-superbuild/build/install/share/yarp-devices-ros2
 
 # ergocub-software for ros2
 RUN cd robotology-superbuild/src/ergocub-software &&\
