@@ -1,6 +1,6 @@
 #!/bin/bash
-NAME=simonemiche/ergocub_nav_base
-TAG=ergocubSN002     
+NAME=elandini84/nlp_tools
+TAG=gccpp_v2.22_llm_master
 
 sudo xhost +
 sudo docker run \
@@ -10,6 +10,6 @@ sudo docker run \
      -e DISPLAY=unix${DISPLAY} \
      --device /dev/dri/card0:/dev/dri/card0 \
      -v /tmp/.X11-unix:/tmp/.X11-unix \
-     -v ./config/yarp.conf:/home/ecub_docker/.config/yarp/yarp.conf \
-     -v ./config/cyclonedds.xml:/home/ecub_docker/cyclonedds.xml \
+     -v /usr/local/src/robot/hsp/docker_ergocub/config/yarp.conf:/home/yarp-user/.config/yarp/yarp.conf \
+     -v /usr/local/src/robot/hsp/docker_ergocub/credentials/google-credential/hsp_google.json:/home/yarp-user/.config/google-credential/hsp_google.json \
      ${NAME}:${TAG} bash
