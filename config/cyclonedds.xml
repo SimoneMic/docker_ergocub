@@ -4,14 +4,14 @@
       <General>
          <AllowMulticast>false</AllowMulticast>
          <Interfaces>
-            <NetworkInterface address="10.0.2.5" priority="default"/>
+            <NetworkInterface address="10.0.2.24" priority="default"/>
          </Interfaces>
       </General>
       <Discovery>
          <MaxAutoParticipantIndex>300</MaxAutoParticipantIndex>
          <ParticipantIndex>auto</ParticipantIndex>
          <Peers>
-            <Peer address="10.0.2.5"/>
+            <Peer address="10.0.2.24"/>
             <Peer address="10.0.2.22"/>
          </Peers>
       </Discovery>
