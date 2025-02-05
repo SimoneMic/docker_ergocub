@@ -202,4 +202,4 @@ RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-so
 # overwrite the env variable by mounting the correct file from docker run script
 ENV CYCLONEDDS_URI=/home/$USERNAME/cyclonedds.xml
 
-RUN sudo apt install -y mlocate && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+RUN sudo apt install -y mlocate bash-completion iproute2 && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
