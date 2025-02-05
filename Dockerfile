@@ -98,7 +98,7 @@ ARG BUILD_TYPE=Release
 #    make -j8 && make install -j8
 
 # Install just YARP and not all the useless stuff from robotology superbuild
-RUN git clone https://github.com/robotology/ycm.git -b yarp-3.10 && \
+RUN git clone https://github.com/robotology/ycm.git -b master && \
     cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j4 &&     sudo make install
 
 RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
@@ -185,7 +185,8 @@ RUN code --install-extension ms-vscode.cpptools \
 CMD ["bash"]
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
-    cd yarp-devices-ros2/ros2_interfaces_ws && \
+    cd yarp-devices-ros2 && git checkout 073d7db && \
+    cd ros2_interfaces_ws && \
     source /opt/ros/$ROS_DISTRO/setup.sh && colcon build && \
     cd .. && mkdir build && cd build && \
     source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \
