@@ -13,6 +13,7 @@
          <Peers>
             <Peer address="10.0.2.24"/>
             <Peer address="10.0.2.22"/>
+            <Peer address="10.0.2.123"/>
          </Peers>
       </Discovery>
    </Domain>
