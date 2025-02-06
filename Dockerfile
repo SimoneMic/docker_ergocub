@@ -89,67 +89,66 @@ RUN git config --global user.name ${GIT_USERNAME} && git config --global user.em
 ### Robotology Superbuild Install Section
 ARG BUILD_TYPE=Release
 # Superbuild cloning and installing
-#RUN git clone https://github.com/robotology/robotology-superbuild && \
-#    sudo chmod +x robotology-superbuild/scripts/install_apt_dependencies.sh && \
-#    sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
-#
-#RUN cd robotology-superbuild && mkdir build && cd build && \
-#    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
-#    make -j8 && make install -j8
+RUN git clone https://github.com/robotology/robotology-superbuild && \
+    sudo chmod +x robotology-superbuild/scripts/install_apt_dependencies.sh && \
+    sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
+
+RUN cd robotology-superbuild && mkdir build && cd build && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
+    make -j8 && make install -j8
+RUN echo "source /home/$USERNAME/robotology-superbuild/build/install/share/robotology-superbuild/setup.sh" >> ~/.bashrc
 
 # Install just YARP and not all the useless stuff from robotology superbuild
-RUN git clone https://github.com/robotology/ycm.git -b master && \
-    cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j4 &&     sudo make install
-
-RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
-  ycm-cmake-modules \
-  libeigen3-dev \
-  libace-dev \
-  libedit-dev \
-  libsqlite3-dev \
-  libtinyxml-dev \
-  qtbase5-dev qtdeclarative5-dev qtmultimedia5-dev \
-  qml-module-qtquick2 qml-module-qtquick-window2 \
-  qml-module-qtmultimedia qml-module-qtquick-dialogs \
-  qml-module-qtquick-controls qml-module-qt-labs-folderlistmodel \
-  qml-module-qt-labs-settings \
-  libqcustomplot-dev \
-  libgraphviz-dev \
-  libjpeg-dev \
-  gedit \
-  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-  gstreamer1.0-plugins-base \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-libav
-
-RUN git clone https://github.com/robotology/yarp && \
-    cd yarp && git switch yarp-3.10 && mkdir build && cd build && cmake .. \
-    -DENABLE_yarpcar_mjpeg=ON \
-    -DENABLE_yarppm_bottle_compression_zlib=ON \
-    -DENABLE_yarppm_depthimage_compression_zlib=ON \
-    -DENABLE_yarppm_image_compression_ffmpeg=ON \
-    -DENABLE_yarpmod_rangefinder2D_nws_yarp=ON \
-    -DENABLE_yarpmod_rangefinder2D_nwc_yarp=ON \
-    && make -j9
-ENV YARP_DATA_DIRS=/home/$USERNAME/yarp/build/share/yarp
-ENV YARP_DIR=/home/$USERNAME/yarp/build
-ENV PATH=${PATH}:${YARP_DIR}/bin
-ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${YARP_DIR}/lib
+#RUN git clone https://github.com/robotology/ycm.git -b master && \
+#    cd ycm && mkdir build && cd build &&     cmake ..     -DCMAKE_BUILD_TYPE=$BUILD_TYPE &&     make -j4 &&     sudo make install
+#
+#RUN sudo apt-get install -y build-essential git cmake cmake-curses-gui \
+#  ycm-cmake-modules \
+#  libeigen3-dev \
+#  libace-dev \
+#  libedit-dev \
+#  libsqlite3-dev \
+#  libtinyxml-dev \
+#  qtbase5-dev qtdeclarative5-dev qtmultimedia5-dev \
+#  qml-module-qtquick2 qml-module-qtquick-window2 \
+#  qml-module-qtmultimedia qml-module-qtquick-dialogs \
+#  qml-module-qtquick-controls qml-module-qt-labs-folderlistmodel \
+#  qml-module-qt-labs-settings \
+#  libqcustomplot-dev \
+#  libgraphviz-dev \
+#  libjpeg-dev \
+#  gedit \
+#  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+#  gstreamer1.0-plugins-base \
+#  gstreamer1.0-plugins-good \
+#  gstreamer1.0-plugins-bad \
+#  gstreamer1.0-libav
+#
+#RUN git clone https://github.com/robotology/yarp && \
+#    cd yarp && git switch yarp-3.10 && mkdir build && cd build && cmake .. \
+#    -DENABLE_yarpcar_mjpeg=ON \
+#    -DENABLE_yarppm_bottle_compression_zlib=ON \
+#    -DENABLE_yarppm_depthimage_compression_zlib=ON \
+#    -DENABLE_yarppm_image_compression_ffmpeg=ON \
+#    -DENABLE_yarpmod_rangefinder2D_nws_yarp=ON \
+#    -DENABLE_yarpmod_rangefinder2D_nwc_yarp=ON \
+#    && make -j9
+#ENV YARP_DATA_DIRS=/home/$USERNAME/yarp/build/share/yarp
+#ENV YARP_DIR=/home/$USERNAME/yarp/build
+#ENV PATH=${PATH}:${YARP_DIR}/bin
+#ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${YARP_DIR}/lib
 
 
 RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
     sudo apt install -y glpk-doc glpk-utils libglpk-dev libglpk40
 
 # Environment setup for real robot
-ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:/home/$USERNAME/yarp/build/share/yarp
 ENV YARP_COLORED_OUTPUT=1
 ENV YARP_ROBOT_NAME=ergoCubSN002
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 # Bashrc setup
 RUN echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
-    echo "alias merge_ports='yarp merge --input /wholeBodyDynamics/right_foot_front/cartesianEndEffectorWrench:o /wholeBodyDynamics/left_foot_front/cartesianEndEffectorWrench:o --output /feetWrenches'" >> ~/.bashrc && \
     echo "alias build_nav='colcon build --symlink-install'" >> ~/.bashrc && \
     echo "alias nav_cd='cd /home/$USERNAME/ros2_workspace'" >> ~/.bashrc && \
     echo "alias bimanual_connection='yarp connect /bimanualUpperRefs /walking-coordinator/humanState:i'" >> ~/.bashrc && \
@@ -164,6 +163,12 @@ EXPOSE 10000/tcp 10000/udp
 # Nav2
 RUN sudo apt update && sudo apt install -y ros-$ROS_DISTRO-navigation2 ros-$ROS_DISTRO-nav2-bringup ros-$ROS_DISTRO-perception ros-$ROS_DISTRO-slam-toolbox
 # Adding pointcloud to laserscan and ergocub_navigation on ROS2 WS
+ENV ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build
+ENV YARP_DIR=/home/$USERNAME/robotology-superbuild/build/src/YARP
+ENV YCM_DIR=/home/$USERNAME/robotology-superbuild/build/src/YCM
+ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\yarp:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\iCub:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\ergoCub:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\ICUBcontrib
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX/lib:$YARP_DIR:$YCM_DIR
+ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
     /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.sh && colcon build"  && \
@@ -203,4 +208,4 @@ RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-so
 # overwrite the env variable by mounting the correct file from docker run script
 ENV CYCLONEDDS_URI=/home/$USERNAME/cyclonedds.xml
 
-RUN sudo apt install -y mlocate bash-completion iproute2 && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+RUN sudo apt install -y mlocate bash-completion nano iproute2 && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
