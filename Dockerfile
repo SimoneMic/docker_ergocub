@@ -94,7 +94,7 @@ RUN git clone https://github.com/robotology/robotology-superbuild && \
     sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
 
 RUN cd robotology-superbuild && mkdir build && cd build && \
-    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_ICUB_HEAD=ON -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
     make -j8 && make install -j8
 RUN echo "source /home/$USERNAME/robotology-superbuild/build/install/share/robotology-superbuild/setup.sh" >> ~/.bashrc
 
