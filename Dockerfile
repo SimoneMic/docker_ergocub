@@ -170,6 +170,8 @@ ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\y
 ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX/lib:$YARP_DIR:$YCM_DIR
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX
 SHELL ["/bin/bash", "-c"]
+# Recompile from here TODO remove
+RUN cd 
 RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
     /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.sh && colcon build"  && \
     cd src && \
@@ -187,7 +189,6 @@ RUN code --install-extension ms-vscode.cpptools \
                 --install-extension eamodio.gitlens
 
 # yarp-devices-ros2
-CMD ["bash"]
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
     cd yarp-devices-ros2 && git checkout 073d7db && \
@@ -204,6 +205,15 @@ ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/sha
 WORKDIR /home/$USERNAME
 
 RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-software && mkdir build && cd build && cmake .. && make -j4
+
+# ErgoCub Behavior
+RUN git clone https://github.com/hsp-iit/ergocub-rpc-interfaces && cd ergocub-rpc-interfaces/ecub_perception/cpp_library && mkdir build &&\
+    cd build && cmake .. && sudo make install -j4 && cd &&\
+    cd ergocub-rpc-interfaces/ecub_gaze_controller/cpp_library && mkdir build &&\
+    cd build && cmake .. && sudo make install -j4
+RUN git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git && cd BehaviorTree.CPP && git checkout 61c55ed &&\
+    mkdir build && cd build && cmake .. && sudo make install -j8
+RUN git clone https://github.com/SimoneMic/ergocub-behavior && cd ergocub-behavior && mkdir build && cd build && cmake .. && make -j4
 
 # overwrite the env variable by mounting the correct file from docker run script
 ENV CYCLONEDDS_URI=/home/$USERNAME/cyclonedds.xml
