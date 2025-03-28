@@ -3,6 +3,27 @@ NAME=simonemiche/ergocub_nav_base
 TAG=ergocubSN002     
 
 sudo xhost +
+
+if [ -z "$YARP_ROBOT_NAME" ]; then
+    echo "YARP_ROBOT_NAME is not set or is empty. Please "
+    exit 1
+else
+    echo "Launching docker for robot: $YARP_ROBOT_NAME"
+fi
+
+CYCLONE_PATH=""
+
+if [ "$YARP_ROBOT_NAME" == "ergoCubSN000" ]; then
+    CYCLONE_PATH=./config/cyclonedds_ergoCubSN000.xml
+elif [ "$YARP_ROBOT_NAME" == "ergoCubSN001" ]; then
+    CYCLONE_PATH=./config/cyclonedds_ergoCubSN001.xml
+elif [ "$YARP_ROBOT_NAME" == "ergoCubSN002" ]; then
+    CYCLONE_PATH=./config/cyclonedds_ergoCubSN002.xml
+else
+     echo "Unknown robot name: $YARP_ROBOT_NAME exiting..."
+     exit 1
+fi
+
 sudo docker run \
      --network=host --privileged \
      -it \
@@ -11,5 +32,5 @@ sudo docker run \
      --device /dev/dri/card0:/dev/dri/card0 \
      -v /tmp/.X11-unix:/tmp/.X11-unix \
      -v ./config/yarp.conf:/home/ecub_docker/.config/yarp/yarp.conf \
-     -v ./config/cyclonedds.xml:/home/ecub_docker/cyclonedds.xml \
+     -v $CYCLONE_PATH:/home/ecub_docker/cyclonedds.xml \
      ${NAME}:${TAG} bash
