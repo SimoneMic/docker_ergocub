@@ -12,13 +12,17 @@ else
 fi
 
 CYCLONE_PATH=""
+YARP_CONF_PATH=""
 
 if [ "$YARP_ROBOT_NAME" == "ergoCubSN000" ]; then
     CYCLONE_PATH=./config/cyclonedds_ergoCubSN000.xml
+    YARP_CONF_PATH=./config/yarp_ergoCubSN000.conf
 elif [ "$YARP_ROBOT_NAME" == "ergoCubSN001" ]; then
     CYCLONE_PATH=./config/cyclonedds_ergoCubSN001.xml
+    YARP_CONF_PATH=./config/yarp_ergoCubSN001.conf
 elif [ "$YARP_ROBOT_NAME" == "ergoCubSN002" ]; then
     CYCLONE_PATH=./config/cyclonedds_ergoCubSN002.xml
+    YARP_CONF_PATH=./config/yarp_ergoCubSN002.conf
 else
      echo "Unknown robot name: $YARP_ROBOT_NAME exiting..."
      exit 1
@@ -31,6 +35,6 @@ sudo docker run \
      -e DISPLAY=unix${DISPLAY} \
      --device /dev/dri/card0:/dev/dri/card0 \
      -v /tmp/.X11-unix:/tmp/.X11-unix \
-     -v ./config/yarp.conf:/home/ecub_docker/.config/yarp/yarp.conf \
+     -v $YARP_CONF_PATH:/home/ecub_docker/.config/yarp/yarp.conf \
      -v $CYCLONE_PATH:/home/ecub_docker/cyclonedds.xml \
      ${NAME}:${TAG} bash
