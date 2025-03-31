@@ -94,9 +94,12 @@ RUN git clone https://github.com/robotology/robotology-superbuild && \
     sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
 
 RUN cd robotology-superbuild && mkdir build && cd build && \
-    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_ICUB_HEAD=ON -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_ICUB_HEAD=OFF -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
     make -j8 && make install -j8
 RUN echo "source /home/$USERNAME/robotology-superbuild/build/install/share/robotology-superbuild/setup.sh" >> ~/.bashrc
+
+#Rollback YARP (for SN001) to 3.10.1
+RUN cd robotology-superbuild/src/YARP && git switch yarp-3.10 && cd ../../build/src/YARP && make -j8
 
 # Install just YARP and not all the useless stuff from robotology superbuild
 #RUN git clone https://github.com/robotology/ycm.git -b master && \
@@ -190,8 +193,10 @@ RUN code --install-extension ms-vscode.cpptools \
 
 # yarp-devices-ros2
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
+# For YARP 3.10 ish -> e4ba8fa2efe7486edd3ade40b2236e69acb6ab37
+# For YARP 3.11 ish ->  073d7db
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
-    cd yarp-devices-ros2 && git checkout 073d7db && \
+    cd yarp-devices-ros2 && git checkout e4ba8fa2efe7486edd3ade40b2236e69acb6ab37 && \
     cd ros2_interfaces_ws && \
     source /opt/ros/$ROS_DISTRO/setup.sh && colcon build && \
     cd .. && mkdir build && cd build && \
@@ -204,7 +209,7 @@ ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/sha
 
 WORKDIR /home/$USERNAME
 
-RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-software && mkdir build && cd build && cmake .. && make -j4
+RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-software && git checkout v0.7.7 && mkdir build && cd build && cmake .. && make -j4
 
 # ErgoCub Behavior
 RUN git clone https://github.com/hsp-iit/ergocub-rpc-interfaces && cd ergocub-rpc-interfaces/ecub_perception/cpp_library && mkdir build &&\
