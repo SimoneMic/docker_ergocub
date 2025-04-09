@@ -99,7 +99,7 @@ RUN cd robotology-superbuild && mkdir build && cd build && \
 RUN echo "source /home/$USERNAME/robotology-superbuild/build/install/share/robotology-superbuild/setup.sh" >> ~/.bashrc
 
 #Rollback YARP (for SN001) to 3.10.1
-RUN cd robotology-superbuild/src/YARP && git switch yarp-3.10 && cd ../../build/src/YARP && make -j8
+RUN cd robotology-superbuild/src/YARP && git switch yarp-3.10 && cd ../../build/src/YARP && make install -j8
 
 # Install just YARP and not all the useless stuff from robotology superbuild
 #RUN git clone https://github.com/robotology/ycm.git -b master && \

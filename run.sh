@@ -17,12 +17,15 @@ YARP_CONF_PATH=""
 if [ "$YARP_ROBOT_NAME" == "ergoCubSN000" ]; then
     CYCLONE_PATH=./config/cyclonedds_ergoCubSN000.xml
     YARP_CONF_PATH=./config/yarp_ergoCubSN000.conf
+    TAG=ergocubSN000
 elif [ "$YARP_ROBOT_NAME" == "ergoCubSN001" ]; then
     CYCLONE_PATH=./config/cyclonedds_ergoCubSN001.xml
     YARP_CONF_PATH=./config/yarp_ergoCubSN001.conf
+    TAG=ergocubSN001
 elif [ "$YARP_ROBOT_NAME" == "ergoCubSN002" ]; then
     CYCLONE_PATH=./config/cyclonedds_ergoCubSN002.xml
     YARP_CONF_PATH=./config/yarp_ergoCubSN002.conf
+    TAG=ergocubSN002
 else
      echo "Unknown robot name: $YARP_ROBOT_NAME exiting..."
      exit 1
