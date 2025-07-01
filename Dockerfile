@@ -181,6 +181,7 @@ RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_works
     git clone https://github.com/hsp-iit/ergocub_navigation.git && \
     git clone https://github.com/hsp-iit/bt_nav2_ergocub.git && \
     git clone -b humble https://github.com/ros-perception/pointcloud_to_laserscan && \
+    git clone https://github.com/SimoneMic/theta_star_oriented && \
     cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/$ROS_DISTRO
 
