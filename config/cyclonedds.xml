@@ -4,7 +4,7 @@
       <General>
          <AllowMulticast>false</AllowMulticast>
          <Interfaces>
-            <NetworkInterface address="10.0.2.24" priority="default"/>
+            <NetworkInterface address="10.0.2.123" priority="default"/>
          </Interfaces>
       </General>
       <Discovery>
