@@ -84,7 +84,7 @@ ARG BUILD_TYPE=Release
 RUN git clone https://github.com/robotology/robotology-superbuild && \
     sudo chmod +x robotology-superbuild/scripts/install_apt_dependencies.sh && \
     sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
-RUN cd robotology-superbuild && mkdir build && cd build && \
+RUN cd robotology-superbuild && git switch releases/2025.05 && mkdir build && cd build && \
     export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_ICUB_HEAD=ON -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
     make -j8 && make install -j8
 RUN echo "source /home/$USERNAME/robotology-superbuild/build/install/share/robotology-superbuild/setup.sh" >> ~/.bashrc
@@ -139,11 +139,11 @@ RUN code --install-extension ms-vscode.cpptools \
                 --install-extension eamodio.gitlens
 
 # yarp-devices-ros2 with YARP 3.10 (compatible with 073d7db)
-RUN cd robotology-superbuild/src/YARP && git checkout yarp-3.10 && cd ../../build/src/YARP && make install -j8
+#RUN cd robotology-superbuild/src/YARP && git checkout yarp-3.10 && cd ../../build/src/YARP && make install -j8
 ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
+#cd yarp-devices-ros2 && git checkout 073d7db && \
 RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
-    cd yarp-devices-ros2 && git checkout 073d7db && \
-    cd ros2_interfaces_ws && \
+    cd yarp-devices-ros2/ros2_interfaces_ws && \
     source /opt/ros/$ROS_DISTRO/setup.sh && colcon build && \
     cd .. && mkdir build && cd build && \
     source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \

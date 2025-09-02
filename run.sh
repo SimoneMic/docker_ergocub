@@ -1,6 +1,6 @@
 #!/bin/bash
 NAME=simonemiche/ergocub_nav_base
-TAG=ergocubSN002     
+TAG=ergocubSN002_yarp3-12     
 
 sudo xhost +
 
@@ -37,4 +37,5 @@ sudo docker run \
      -v /tmp/.X11-unix:/tmp/.X11-unix \
      -v $YARP_CONF_PATH:/home/ecub_docker/.config/yarp/yarp.conf \
      -v $CYCLONE_PATH:/home/ecub_docker/cyclonedds.xml \
+     -v /mnt/expdata/rosbags/rosbags:/home/ecub_docker/rosbags \
      ${NAME}:${TAG} bash
