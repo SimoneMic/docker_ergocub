@@ -32,10 +32,6 @@ fi
 
 CONTAINER_NAME="ecub_docker"
 IMAGE_NAME=${NAME}:${TAG}
-MACVLAN_NET="macvlan_net"
-MACVLAN_PARENT="enp45s0"
-CONTAINER_IP="10.0.2.50"
-HOST_SSH_KEY="$HOME/.ssh/id_ed25519.pub"
 CONTAINER_USER="ecub_docker"
 
 echo "Running container with image: ${IMAGE_NAME}"
