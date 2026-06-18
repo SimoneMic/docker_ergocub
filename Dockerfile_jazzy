@@ -1,0 +1,175 @@
+FROM ubuntu:24.04
+
+ARG RELEASE
+
+ARG LAUNCHPAD_BUILD_ARCH
+
+
+CMD ["/bin/bash"]
+
+# Linux stuff
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends libxau6 libxau6:i386 libxdmcp6 libxdmcp6:i386  libxcb1 libxcb1:i386 libxext6 libxext6:i386 libx11-6 libx11-6:i386 && rm -rf /var/lib/apt/lists/*
+
+# Nvidia Graphics
+ENV NVIDIA_VISIBLE_DEVICES  ${NVIDIA_VISIBLE_DEVICES:-all}
+
+ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics,compat32,utility
+
+RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf &&     echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+
+ENV LD_LIBRARY_PATH /usr/lib/x86_64-linux-gnu:/usr/lib/i386-linux-gnu${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+
+RUN apt-get update  && apt-get install -y --no-install-recommends         pkg-config         libglvnd-dev libglvnd-dev:i386         libgl1-mesa-dev libgl1-mesa-dev:i386         libegl1-mesa-dev libegl1-mesa-dev:i386         libgles2-mesa-dev libgles2-mesa-dev:i386 &&     rm -rf /var/lib/apt/lists/*
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Essentials pkgs setup
+RUN apt-get update  && apt-get install -y build-essential \
+    cmake cppcheck doxygen gdb git gnupg2 libcwiid-dev libspnav-dev locales lsb-release mercurial \
+    python3-dbg python3-empy python3-numpy python3-pip python3-psutil python3-venv \
+    software-properties-common sudo tzdata vim wget curl tmux psmisc
+
+# Xorg setup
+RUN apt update && \
+    apt install -y xfce4 xfce4-goodies xserver-xorg-video-dummy xserver-xorg-legacy && \
+    sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
+COPY ./xorg.conf /etc/X11/xorg.conf
+# Latest x11vnc
+#RUN sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list && \
+#    apt update && \
+#    git clone https://github.com/LibVNC/x11vnc.git /opt/x11vnc && \
+#    cd /opt/x11vnc && \
+#    apt build-dep -y x11vnc && \
+#    autoreconf -fiv && \
+#    ./configure && \
+#    make -j && \
+#    make install && \
+#    rm /opt/x11vnc -Rf
+
+# ROS2 preparation
+RUN sudo apt update && sudo apt install curl -y && \
+    export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}') && \
+    curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb" && \
+    sudo dpkg -i /tmp/ros2-apt-source.deb
+
+# ROS2 install
+ENV ROS_DISTRO=jazzy
+RUN apt update && apt install -y python3-rosdep python3-vcstool python3-colcon-common-extensions  python3-colcon-mixin \
+    ros-$ROS_DISTRO-desktop     ros-$ROS_DISTRO-generate-parameter-library  ros-dev-tools\
+    ros-$ROS_DISTRO-geometric-shapes       ros-$ROS_DISTRO-joint-state-broadcaster     ros-$ROS_DISTRO-joint-state-publisher \
+    ros-$ROS_DISTRO-rmw-cyclonedds-cpp     ros-$ROS_DISTRO-ros2-control     ros-$ROS_DISTRO-rviz-visual-tools     ros-$ROS_DISTRO-xacro \
+    ros-$ROS_DISTRO-test-msgs   ros-$ROS_DISTRO-rqt* && apt clean
+
+
+
+RUN useradd -l -u 33334 -G sudo -md /home/ecub_docker -s /bin/bash -p ecub_docker ecub_docker &&     sed -i.bkp -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers
+ENV USERNAME ecub_docker
+USER $USERNAME
+
+WORKDIR /home/$USERNAME
+
+RUN sudo rosdep init && rosdep update
+RUN colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml && colcon mixin update default && rm -rf log
+# Code
+RUN sudo apt install software-properties-common apt-transport-https wget -y
+RUN wget -O- https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor | sudo tee /usr/share/keyrings/vscode.gpg
+RUN echo deb [arch=amd64 signed-by=/usr/share/keyrings/vscode.gpg] https://packages.microsoft.com/repos/vscode stable main | sudo tee /etc/apt/sources.list.d/vscode.list
+RUN sudo apt update && sudo apt install -y code
+
+
+# Git Setup
+ARG GIT_USERNAME
+ARG GIT_USER_EMAIL
+RUN git config --global user.name ${GIT_USERNAME} && git config --global user.email ${GIT_USER_EMAIL}
+
+### Robotology Superbuild Install Section
+ARG BUILD_TYPE=Release
+# Superbuild cloning and installing
+RUN git clone https://github.com/robotology/robotology-superbuild && \
+    sudo chmod +x robotology-superbuild/scripts/install_apt_dependencies.sh && \
+    sudo bash ./robotology-superbuild/scripts/install_apt_dependencies.sh
+
+RUN cd robotology-superbuild && git checkout v2025.11.0 && mkdir build && cd build && \
+    export OpenCV_DIR=/usr/lib/x86_64-linux-gnu/cmake/opencv4 && cmake -DROBOTOLOGY_ENABLE_CORE=ON -DROBOTOLOGY_ENABLE_ICUB_HEAD=OFF -DROBOTOLOGY_USES_GAZEBO=OFF -DROBOTOLOGY_ENABLE_DYNAMICS=OFF -DROBOTOLOGY_ENABLE_DYNAMICS_FULL_DEPS=OFF .. && \
+    make -j8 && make install -j8
+RUN echo "source /home/$USERNAME/robotology-superbuild/build/install/share/robotology-superbuild/setup.sh" >> ~/.bashrc
+
+RUN cd robotology-superbuild/src/YARP && git switch yarp-3.12 && cd ../../build/src/YARP && make install -j8
+
+RUN sudo ln -s /usr/local/share/bash-completion/completions/yarp /usr/share/bash-completion/completions && \
+    sudo apt install -y glpk-doc glpk-utils libglpk-dev libglpk40
+
+# Environment setup for real robot
+ENV YARP_COLORED_OUTPUT=1
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+# Bashrc setup
+RUN echo "alias 0_yarpserver='yarpserver --write'" >> ~/.bashrc && \
+    echo "alias build_nav='colcon build --symlink-install'" >> ~/.bashrc && \
+    echo "alias nav_cd='cd /home/$USERNAME/ros2_workspace'" >> ~/.bashrc && \
+    echo "alias bimanual_connection='yarp connect /bimanualUpperRefs /walking-coordinator/humanState:i'" >> ~/.bashrc && \
+    echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /home/$USERNAME/.bashrc && \
+    echo "source /home/$USERNAME/ros2_workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
+
+EXPOSE 8080
+EXPOSE 8888
+EXPOSE 6080
+EXPOSE 10000/tcp 10000/udp
+
+# Nav2
+RUN sudo apt update && sudo apt install -y ros-$ROS_DISTRO-navigation2 ros-$ROS_DISTRO-nav2-bringup ros-$ROS_DISTRO-perception ros-$ROS_DISTRO-slam-toolbox
+# Adding pointcloud to laserscan and ergocub_navigation on ROS2 WS
+ENV ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX=/home/$USERNAME/robotology-superbuild/build
+ENV YARP_DIR=/home/$USERNAME/robotology-superbuild/build/src/YARP
+ENV YCM_DIR=/home/$USERNAME/robotology-superbuild/build/src/YCM
+ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\yarp:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\iCub:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\ergoCub:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX\share\ICUBcontrib
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX/lib:$YARP_DIR:$YCM_DIR
+ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:$ROBOTOLOGY_SUPERBUILD_INSTALL_PREFIX
+SHELL ["/bin/bash", "-c"]
+# Recompile from here TODO remove
+
+RUN mkdir -p /home/$USERNAME/ros2_workspace/src && cd /home/$USERNAME/ros2_workspace && \
+    /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.sh && colcon build"  && \
+    cd src && \
+    git clone -b jazzy https://github.com/hsp-iit/ergocub_navigation.git && \
+    git clone -b jazzy https://github.com/hsp-iit/bt_nav2_ergocub.git && \
+    git clone -b jazzy https://github.com/ros-perception/pointcloud_to_laserscan && \
+    git clone -b jazzy https://github.com/SimoneMic/theta_star_oriented && \
+    cd .. && source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_CXX_FLAGS=-w
+ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/opt/ros/$ROS_DISTRO
+
+# Install VisualStudio Code extensions
+RUN code --install-extension ms-vscode.cpptools \
+		--install-extension ms-vscode.cpptools-themes \
+		--install-extension ms-vscode.cmake-tools \
+                --install-extension ms-python.python \
+                --install-extension eamodio.gitlens
+
+# yarp-devices-ros2
+ENV AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH:/home/$USERNAME/robotology-superbuild/build/install
+# For YARP 3.10 ish -> e4ba8fa2efe7486edd3ade40b2236e69acb6ab37
+# For YARP 3.11 ish ->  073d7db
+RUN git clone https://github.com/robotology/yarp-devices-ros2 && \
+    cd yarp-devices-ros2 && git switch yarp3_12 && \
+    cd ros2_interfaces_ws && \
+    source /opt/ros/$ROS_DISTRO/setup.sh && colcon build && \
+    cd .. && mkdir build && cd build && \
+    source /opt/ros/$ROS_DISTRO/setup.bash && source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/setup.bash && cmake .. -DYARP_ROS2_USE_SYSTEM_map2d_nws_ros2_msgs=ON -DYARP_ROS2_USE_SYSTEM_yarp_control_msgs=ON && make -j11 && \
+    echo "source /home/$USERNAME/yarp-devices-ros2/ros2_interfaces_ws/install/local_setup.bash" >> ~/.bashrc
+
+ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:/home/$USERNAME/yarp-devices-ros2/build/share/yarp:/home/$USERNAME/yarp-devices-ros2/build/share/yarp-devices-ros2   
+
+WORKDIR /home/$USERNAME
+
+# git checkout v0.7.7 
+RUN git clone https://github.com/icub-tech-iit/ergocub-software && cd ergocub-software && mkdir build && cd build && cmake .. && make -j4
+
+# overwrite the env variable by mounting the correct file from docker run script
+ENV CYCLONEDDS_URI=/home/$USERNAME/cyclonedds.xml
+RUN cd
+RUN cd ros2_workspace/src/ergocub_navigation &&  git pull && cd ../bt_nav2_ergocub && git pull && cd ../.. &&\
+    source /opt/ros/$ROS_DISTRO/setup.bash && colcon build
+RUN sudo apt install -y plocate bash-completion nano iproute2 terminator && sudo apt clean && sudo rm -rf /var/lib/apt/lists/* && sudo updatedb
+
